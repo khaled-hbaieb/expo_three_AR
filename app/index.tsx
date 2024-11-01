@@ -1,6 +1,6 @@
 import React from "react";
-import { CameraScreen } from "../components/CameraScreen";
+import HomeScreen from "./HomeScreen";
 
 export default function Index() {
-  return <CameraScreen />;
+  return <HomeScreen />;
 }

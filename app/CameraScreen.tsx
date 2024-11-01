@@ -1,11 +1,16 @@
 import React from "react";
 import { View, Text, Button, TouchableOpacity, StyleSheet } from "react-native";
 import { CameraView } from "expo-camera";
-import { Scene3D } from "./Scene3D";
+import { Scene3D } from "../components/Scene3D";
 import { useCamera } from "../hooks/useCamera";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "./_layout";
 
-export const CameraScreen: React.FC = () => {
+const CameraScreen: React.FC = () => {
+  const route = useRoute<RouteProp<RootStackParamList, "CameraScreen">>();
+  const { objectId } = route.params;
+
   const { facing, permission, requestPermission, toggleCameraFacing } =
     useCamera();
 
@@ -30,7 +35,7 @@ export const CameraScreen: React.FC = () => {
     <View style={styles.container}>
       <CameraView style={styles.camera} facing={facing}>
         <View style={styles.container}>
-          <Scene3D style={styles.glView} />
+          <Scene3D style={styles.glView} objectId={objectId} />
         </View>
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
@@ -41,6 +46,8 @@ export const CameraScreen: React.FC = () => {
     </View>
   );
 };
+
+export default CameraScreen;
 
 const styles = StyleSheet.create({
   container: {

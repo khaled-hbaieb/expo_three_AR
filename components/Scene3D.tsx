@@ -13,10 +13,13 @@ import { useModelRotation } from "../hooks/useModelRotation";
 
 interface Scene3DProps {
   style?: object;
+  objectId?: string;
 }
 
-export const Scene3D: React.FC<Scene3DProps> = ({ style }) => {
-  const { objRef, sceneRef, cameraRef, loadModel } = use3DModel();
+export const Scene3D: React.FC<Scene3DProps> = ({ style, objectId }) => {
+  const { objRef, sceneRef, cameraRef, loadModel } = use3DModel({
+    objectId: objectId as string,
+  });
   const panResponder = useModelRotation(objRef);
 
   const onContextCreate = async (gl: any) => {

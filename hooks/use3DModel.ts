@@ -3,14 +3,21 @@ import { Scene, PerspectiveCamera, Object3D } from "three";
 import { Asset } from "expo-asset";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import * as THREE from "three";
+import { MODEL_MAPPING } from "@/constants";
 
-export const use3DModel = () => {
+type use3DModelProps = {
+  objectId: string;
+};
+
+export const use3DModel = ({ objectId }: use3DModelProps) => {
   const objRef = useRef<Object3D | null>(null);
   const sceneRef = useRef<Scene | null>(null);
   const cameraRef = useRef<PerspectiveCamera | null>(null);
 
   const loadModel = async (scene: Scene) => {
-    const asset = Asset.fromModule(require("../assets/obj/car_obj.obj"));
+    const asset = Asset.fromModule(
+      MODEL_MAPPING[objectId as keyof typeof MODEL_MAPPING]
+    );
     await asset.downloadAsync();
 
     const loader = new OBJLoader();
