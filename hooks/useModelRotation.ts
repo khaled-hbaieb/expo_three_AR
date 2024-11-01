@@ -9,8 +9,8 @@ export const useModelRotation = (objRef: React.RefObject<THREE.Object3D>) => {
   const rotationSpeed = 0.01;
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponder: (evt) => evt.nativeEvent.touches.length === 2,
+    onMoveShouldSetPanResponder: (evt) => evt.nativeEvent.touches.length === 2,
 
     onPanResponderGrant: (evt) => {
       const { pageX, pageY } = evt.nativeEvent;

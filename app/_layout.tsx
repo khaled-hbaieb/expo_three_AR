@@ -1,5 +1,7 @@
+import IconButton from "@/components/IconButton";
 import { NavigationProp } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, useNavigation } from "expo-router";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export type RootStackParamList = {
   index: undefined;
@@ -12,9 +14,10 @@ export type RootStackParamList = {
 export type NavigationProps = NavigationProp<RootStackParamList>;
 
 export default function RootLayout() {
+  const navigation = useNavigation<NavigationProps>();
   return (
     <Stack>
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
         name="HomeScreen"
         options={{ headerShown: false, headerTransparent: true }}
@@ -26,6 +29,19 @@ export default function RootLayout() {
           headerTransparent: true,
           headerTitle: "",
           headerTintColor: "white",
+          headerBackTitle: "",
+          headerBackTitleVisible: false,
+          headerLeft: () => (
+            <IconButton
+              IconComponent={MaterialIcons}
+              iconProps={{
+                name: "arrow-back-ios-new",
+                size: 24,
+                color: "white",
+              }}
+              onPress={() => navigation.goBack()}
+            />
+          ),
         }}
       />
     </Stack>

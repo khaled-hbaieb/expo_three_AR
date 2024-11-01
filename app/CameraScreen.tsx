@@ -1,20 +1,40 @@
-import React from "react";
-import { View, Text, Button, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect } from "react";
+import { View, Text, Button, StyleSheet } from "react-native";
 import { CameraView } from "expo-camera";
 import { Scene3D } from "../components/Scene3D";
 import { useCamera } from "../hooks/useCamera";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "./_layout";
+import { useNavigation } from "expo-router";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import IconButton from "@/components/IconButton";
 
 const CameraScreen: React.FC = () => {
   const route = useRoute<RouteProp<RootStackParamList, "CameraScreen">>();
   const { objectId } = route.params;
+  const navigation = useNavigation();
 
   const { facing, permission, requestPermission, toggleCameraFacing } =
     useCamera();
 
   ScreenOrientation.unlockAsync();
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <IconButton
+          IconComponent={MaterialIcons}
+          iconProps={{
+            name: "flip-camera-ios",
+            size: 28,
+            color: "white",
+          }}
+          onPress={toggleCameraFacing}
+        />
+      ),
+    });
+  }, [navigation, toggleCameraFacing]);
 
   if (!permission) {
     return <View />;
@@ -37,11 +57,6 @@ const CameraScreen: React.FC = () => {
         <View style={styles.container}>
           <Scene3D style={styles.glView} objectId={objectId} />
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <Text style={styles.text}>Flip Camera</Text>
-          </TouchableOpacity>
-        </View>
       </CameraView>
     </View>
   );
@@ -53,6 +68,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+    alignContent: "center",
+    height: "100%",
   },
   message: {
     textAlign: "center",

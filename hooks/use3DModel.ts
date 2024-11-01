@@ -25,18 +25,23 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
       loader.load(
         asset.localUri!,
         (obj) => {
-          obj.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-              (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({
-                color: 0xff0000,
-                roughness: 0.5,
-                metalness: 0.5,
-              });
-            }
-          });
+          const boundingBox = new THREE.Box3().setFromObject(obj);
+          const size = new THREE.Vector3();
+          boundingBox.getSize(size);
 
-          obj.position.set(0, -3, 0);
-          obj.scale.set(1, 1, 1);
+          // Center the model
+          const center = new THREE.Vector3();
+          boundingBox.getCenter(center);
+          obj.position.sub(center); // Offset the object to center it
+
+          // Uniform scale based on bounding box size
+          const desiredSize = 5;
+          const scaleFactor = desiredSize / Math.max(size.x, size.y, size.z);
+          obj.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+          // Adjust the Y position slightly if the model still appears off-center
+          obj.position.y = -size.y / 2; // Center it vertically
+
           scene.add(obj);
           objRef.current = obj;
           resolve(obj);
