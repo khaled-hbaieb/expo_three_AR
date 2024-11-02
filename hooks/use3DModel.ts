@@ -35,12 +35,15 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
           obj.position.sub(center); // Offset the object to center it
 
           // Uniform scale based on bounding box size
-          const desiredSize = 5;
+          const desiredSize = 12;
           const scaleFactor = desiredSize / Math.max(size.x, size.y, size.z);
           obj.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
           // Adjust the Y position slightly if the model still appears off-center
           obj.position.y = -size.y / 2; // Center it vertically
+
+          // Rotate the model to correct its orientation (flip upside down)
+          obj.rotation.x = 4.5; // Adjust this as necessary
 
           // Load and apply textures
           const texturePromises = modelData.textures.map(
