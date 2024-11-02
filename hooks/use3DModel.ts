@@ -3,7 +3,8 @@ import { Scene, PerspectiveCamera, Object3D } from "three";
 import { Asset } from "expo-asset";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import * as THREE from "three";
-import { MODEL_MAPPING } from "@/constants";
+import { MODEL_MAPPING, ModelMappingKeys } from "@/constants";
+import { loadTextureAsync } from "expo-three";
 
 type use3DModelProps = {
   objectId: string;
@@ -15,16 +16,15 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
   const cameraRef = useRef<PerspectiveCamera | null>(null);
 
   const loadModel = async (scene: Scene) => {
-    const asset = Asset.fromModule(
-      MODEL_MAPPING[objectId as keyof typeof MODEL_MAPPING]
-    );
+    const modelData = MODEL_MAPPING[objectId];
+    const asset = Asset.fromModule(modelData.obj);
     await asset.downloadAsync();
 
     const loader = new OBJLoader();
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       loader.load(
         asset.localUri!,
-        (obj) => {
+        async (obj) => {
           const boundingBox = new THREE.Box3().setFromObject(obj);
           const size = new THREE.Vector3();
           boundingBox.getSize(size);
@@ -41,6 +41,28 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
 
           // Adjust the Y position slightly if the model still appears off-center
           obj.position.y = -size.y / 2; // Center it vertically
+
+          // Load and apply textures
+          const texturePromises = modelData.textures.map(
+            async (texturePath) => {
+              return await loadTextureAsync({ asset: texturePath });
+            }
+          );
+
+          // Wait for all textures to load
+          const textures = await Promise.all(texturePromises);
+
+          // Apply textures to the model
+          let textureIndex = 0;
+          obj.traverse((child) => {
+            if (child instanceof THREE.Mesh && textureIndex < textures.length) {
+              // Create a new material for each mesh and assign the texture
+              child.material = new THREE.MeshPhongMaterial({
+                map: textures[textureIndex],
+              });
+              textureIndex++;
+            }
+          });
 
           scene.add(obj);
           objRef.current = obj;

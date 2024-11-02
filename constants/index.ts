@@ -2,8 +2,8 @@ import { ObjectInfo } from "@/interfaces";
 
 export const OBJECT_DATA: ObjectInfo[] = [
   {
-    id: "car",
-    title: "Car Model",
+    id: "deer",
+    title: "Deer Model",
     thumbnail:
       "https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?w=500&q=80",
   },
@@ -21,8 +21,31 @@ export const OBJECT_DATA: ObjectInfo[] = [
   },
 ];
 
-export const MODEL_MAPPING = {
-  car: require("../assets/obj/car_obj.obj"),
-  cat: require("../assets/obj/cat_obj.obj"),
-  duck: require("../assets/obj/duck_obj.obj"),
+export const MODEL_MAPPING: ModelMapping = {
+  duck: {
+    obj: require("../assets/obj/duck_obj.obj"),
+    textures: [require("../assets/duck/duck_texture.jpg")],
+  },
+  cat: {
+    obj: require("../assets/cat/cat_obj.obj"),
+    textures: [require("../assets/cat/cat_texture.jpg")],
+  },
+  deer: {
+    obj: require("../assets/deer/deer_obj.obj"),
+    textures: [require("../assets/deer/deer_texture.jpg")],
+  },
 } as const;
+
+// Define the structure of each model entry
+type ModelEntry = {
+  obj: string; // Path to the object
+  textures: readonly string[]; // Array of texture paths
+};
+
+// Define the structure of MODEL_MAPPING
+export type ModelMapping = {
+  [key: string]: ModelEntry;
+};
+
+// Define a type for the keys of MODEL_MAPPING
+export type ModelMappingKeys = keyof typeof MODEL_MAPPING;
