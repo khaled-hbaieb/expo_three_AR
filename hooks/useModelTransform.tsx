@@ -4,87 +4,74 @@ import { Vector2 } from "three";
 import * as THREE from "three";
 
 /**
- * A custom hook to handle touch interactions for 3D model manipulation,
- * including rotation and zooming in a Three.js scene.
+ * A custom hook to handle touch interactions for 3D model movement
+ * in a Three.js scene with boundary restrictions.
  *
- * @param {React.RefObject<THREE.PerspectiveCamera>} cameraRef - A reference to the PerspectiveCamera instance.
- * @param {React.RefObject<THREE.Object3D>} objRef - A reference to the 3D object to be manipulated.
+ * @param {React.RefObject<THREE.PerspectiveCamera>} cameraRef - A reference to the PerspectiveCamera instance (not used in this case).
+ * @param {React.RefObject<THREE.Object3D>} objRef - A reference to the 3D object to be moved.
+ * @param {number} boundaryX - The maximum x boundary.
  * @returns {object} - The PanResponder configuration object to be used in a touchable component.
  */
 export const useModelTransform = (
   cameraRef: React.RefObject<THREE.PerspectiveCamera>,
-  objRef: React.RefObject<THREE.Object3D>
+  objRef: React.RefObject<THREE.Object3D>,
+  boundaryX: number = 10
 ) => {
-  // References to track initial distance between two touch points and touch positions
-  const initialDistance = useRef(0);
+  // References to track touch positions
   const touchStart = useRef(new Vector2());
   const touchMove = useRef(new Vector2());
 
-  // Speed settings for rotation
-  const rotationSpeed = 0.01;
+  // Speed multiplier for object movement
+  const movementSpeed = 0.1;
 
-  // Zoom limits
-  const minZoom = useRef(5); // Minimum zoom level
-  const maxZoom = useRef(20); // Maximum zoom level
+  // Store the initial position for reference
+  const initialPosition = useRef(new THREE.Vector3());
 
-  // Create a PanResponder to handle touch interactions
   const panResponder = PanResponder.create({
     // Allow the responder to start when the touch begins
-    onStartShouldSetPanResponder: (evt) => true,
+    onStartShouldSetPanResponder: () => true,
 
     // Allow the responder to move when the touch moves
-    onMoveShouldSetPanResponder: (evt) => true,
+    onMoveShouldSetPanResponder: () => true,
 
     // Handle the start of a touch gesture
     onPanResponderGrant: (evt) => {
-      if (evt.nativeEvent.touches.length === 2) {
-        // For pinch zooming, calculate the initial distance between two touch points
-        const dx =
-          evt.nativeEvent.touches[0].pageX - evt.nativeEvent.touches[1].pageX;
-        const dy =
-          evt.nativeEvent.touches[0].pageY - evt.nativeEvent.touches[1].pageY;
-        initialDistance.current = Math.sqrt(dx * dx + dy * dy);
-      } else if (evt.nativeEvent.touches.length === 1) {
-        // For single touch, record the starting position
-        const { pageX, pageY } = evt.nativeEvent;
+      const { touches } = evt.nativeEvent;
+      if (touches.length === 1) {
+        // Record the initial touch position
+        const { pageX, pageY } = touches[0];
         touchStart.current.set(pageX, pageY);
+
+        // Store the initial position of the object
+        if (objRef.current) {
+          initialPosition.current.copy(objRef.current.position);
+        }
       }
     },
 
     // Handle touch movement
     onPanResponderMove: (evt) => {
-      if (evt.nativeEvent.touches.length === 2) {
-        // For pinch zooming, calculate the new distance and update camera position
-        const dx =
-          evt.nativeEvent.touches[0].pageX - evt.nativeEvent.touches[1].pageX;
-        const dy =
-          evt.nativeEvent.touches[0].pageY - evt.nativeEvent.touches[1].pageY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+      const { touches } = evt.nativeEvent;
 
-        // Calculate the zoom factor based on the initial distance and current distance
-        const zoomFactor = initialDistance.current / distance;
-        initialDistance.current = distance;
-
-        // Update camera position while enforcing zoom limits
-        if (cameraRef.current) {
-          cameraRef.current.position.z = Math.max(
-            minZoom.current,
-            Math.min(maxZoom.current, cameraRef.current.position.z * zoomFactor)
-          );
-        }
-      } else if (evt.nativeEvent.touches.length === 1) {
-        // For rotation with a single touch, calculate the change in position
-        const { pageX, pageY } = evt.nativeEvent;
+      if (touches.length === 1) {
+        // For moving the object with one finger
+        const { pageX, pageY } = touches[0];
         touchMove.current.set(pageX, pageY);
 
-        // Apply rotation to the object based on the change in touch position
+        // Calculate movement deltas
         if (objRef.current) {
           const deltaX = touchMove.current.x - touchStart.current.x;
           const deltaY = touchMove.current.y - touchStart.current.y;
 
-          // Rotate the object around the Y and X axes
-          objRef.current.rotateY(deltaX * rotationSpeed);
-          objRef.current.rotateX(deltaY * rotationSpeed);
+          // Adjust object position
+          objRef.current.position.x += deltaX * movementSpeed; // Move in the X direction
+          objRef.current.position.y -= deltaY * movementSpeed; // Move in the Y direction
+
+          // Clamp the position to stay within defined boundaries
+          objRef.current.position.x = Math.max(
+            -boundaryX,
+            Math.min(boundaryX, objRef.current.position.x)
+          );
 
           // Update the starting touch position for the next movement
           touchStart.current.set(pageX, pageY);
