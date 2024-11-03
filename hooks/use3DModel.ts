@@ -1,9 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Scene, PerspectiveCamera, Object3D } from "three";
 import { Asset } from "expo-asset";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import * as THREE from "three";
-import { MODEL_MAPPING, ModelMappingKeys } from "@/constants";
+import { MODEL_MAPPING } from "@/constants";
 import { loadTextureAsync } from "expo-three";
 
 type use3DModelProps = {
@@ -14,17 +14,47 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
   const objRef = useRef<Object3D | null>(null);
   const sceneRef = useRef<Scene | null>(null);
   const cameraRef = useRef<PerspectiveCamera | null>(null);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   const loadModel = async (scene: Scene) => {
     const modelData = MODEL_MAPPING[objectId];
     const asset = Asset.fromModule(modelData.obj);
     await asset.downloadAsync();
 
-    const loader = new OBJLoader();
+    // Create a loading manager
+    const manager = new THREE.LoadingManager();
+
+    // Define loading manager events
+    manager.onStart = function (url, itemsLoaded, itemsTotal) {
+      console.log(
+        `Started loading file: ${url}.\nLoaded ${itemsLoaded} of ${itemsTotal} files.`
+      );
+    };
+
+    manager.onLoad = function () {
+      console.log("Loading complete!");
+      setLoading(false); // Set loading to false when all models/textures are loaded
+    };
+
+    manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+      console.log(
+        `Loading file: ${url}.\nLoaded ${itemsLoaded} of ${itemsTotal} files.`
+      );
+    };
+
+    manager.onError = function (url) {
+      console.log(`There was an error loading ${url}`);
+      setLoading(false); // Ensure loading is set to false on error
+
+      // TODO:Handle error
+    };
+
+    const loader = new OBJLoader(manager);
     return new Promise(async (resolve, reject) => {
       loader.load(
         asset.localUri!,
         async (obj) => {
+          console.log("Model loaded successfully."); // Log on successful load
           const boundingBox = new THREE.Box3().setFromObject(obj);
           const size = new THREE.Vector3();
           boundingBox.getSize(size);
@@ -39,11 +69,11 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
           const scaleFactor = desiredSize / Math.max(size.x, size.y, size.z);
           obj.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-          // Adjust the Y position slightly if the model still appears off-center
-          obj.position.y = -size.y / 2; // Center it vertically
+          // Center it vertically
+          obj.position.y = -size.y / 2;
 
-          // Rotate the model to correct its orientation (flip upside down)
-          obj.rotation.x = 4.5; // Adjust this as necessary
+          // Rotate the model to correct its orientation
+          obj.rotation.x = 4.5; // Adjust as necessary
 
           // Load and apply textures
           const texturePromises = modelData.textures.map(
@@ -59,7 +89,6 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
           let textureIndex = 0;
           obj.traverse((child) => {
             if (child instanceof THREE.Mesh && textureIndex < textures.length) {
-              // Create a new material for each mesh and assign the texture
               child.material = new THREE.MeshPhongMaterial({
                 map: textures[textureIndex],
               });
@@ -72,7 +101,11 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
           resolve(obj);
         },
         undefined,
-        reject
+        (error) => {
+          console.log("Error loading model:", error); // Log loading error
+          setLoading(false); // Ensure loading is set to false on error
+          reject(error);
+        }
       );
     });
   };
@@ -82,5 +115,6 @@ export const use3DModel = ({ objectId }: use3DModelProps) => {
     sceneRef,
     cameraRef,
     loadModel,
+    loading,
   };
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { GLView } from "expo-gl";
 import { Renderer, THREE } from "expo-three";
 import {
@@ -10,74 +10,65 @@ import {
 import { StyleSheet } from "react-native";
 import { use3DModel } from "../hooks/use3DModel";
 import { useModelTransform } from "@/hooks/useModelTransform";
+import LoadingModel from "./LoadingModel";
 
-// Define the props expected by the Scene3D component
 interface Scene3DProps {
   style?: object;
   objectId?: string;
 }
 
-/**
- * A React functional component that renders a 3D scene using Three.js in an Expo GLView.
- * It loads a 3D model based on the provided objectId and allows user interaction via touch gestures.
- *
- * @param {Scene3DProps} props - The properties for the component.
- * @returns {JSX.Element} The rendered GLView component containing the 3D scene.
- */
 export const Scene3D: React.FC<Scene3DProps> = ({ style, objectId }) => {
-  // Custom hook to manage loading and references to the 3D model
-  const { objRef, sceneRef, cameraRef, loadModel } = use3DModel({
-    objectId: objectId as string, // Ensure objectId is treated as a string
+  const { objRef, sceneRef, cameraRef, loadModel, loading } = use3DModel({
+    objectId: objectId as string,
   });
 
-  // Use the model transform hook for touch interactions
   const panResponder = useModelTransform(cameraRef, objRef);
 
-  // This function is called when the GLView context is created
+  useEffect(() => {
+    console.log("loading: ", loading);
+  }, [loading]);
+
   const onContextCreate = async (gl: any) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
-    // Create a new renderer instance with the GL context
     const renderer = new Renderer({ gl });
-    renderer.setSize(width, height); // Set the size of the renderer
+    renderer.setSize(width, height);
 
-    // Create a new scene
     const scene = new Scene();
-    sceneRef.current = scene; // Store the scene reference
+    sceneRef.current = scene;
 
-    // Set up the camera
     const camera = new PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.set(0, 2, 5); // Position the camera
-    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Point the camera at the scene's center
-    cameraRef.current = camera; // Store the camera reference
+    camera.position.set(0, 2, 5);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+    cameraRef.current = camera;
 
-    // Add ambient light to the scene
     scene.add(new AmbientLight(0x404040, 2));
 
-    // Set up directional light
     const directionalLight = new DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5); // Position the directional light
-    scene.add(directionalLight); // Add light to the scene
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
 
     // Load the 3D model into the scene
     await loadModel(scene);
 
-    // Function to handle the rendering loop
     const render = () => {
-      requestAnimationFrame(render); // Request the next frame
-      renderer.render(scene, camera); // Render the scene from the camera's perspective
-      gl.endFrameEXP(); // End the frame for the GL context
+      requestAnimationFrame(render);
+      renderer.render(scene, camera);
+      gl.endFrameEXP();
     };
-    render(); // Start rendering
+    render();
   };
 
-  // Render the GLView with the appropriate styles and pan responder handlers
   return (
-    <GLView
-      style={[styles.glView, style]}
-      onContextCreate={onContextCreate}
-      {...panResponder.panHandlers}
-    />
+    <>
+      <GLView
+        style={[styles.glView, style]}
+        onContextCreate={onContextCreate}
+        {...panResponder.panHandlers}
+      />
+
+      {loading && <LoadingModel />}
+    </>
   );
 };
 
